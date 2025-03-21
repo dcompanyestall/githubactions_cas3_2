@@ -96,20 +96,28 @@ jobs:
     secrets:
       registry-username: ${{ secrets.DOCKERHUB_USERNAME }}
       registry-password: ${{ secrets.DOCKERHUB_TOKEN }}
-    
+
+  #Intento fer que això funcioni
   upload-provenance:
     runs-on: ubuntu-latest
     needs: [provenance]
-    # Upload provenance as an artifact for easy access
     steps:
+    - name: Install Cosign
+      run: |
+        COSIGN_VERSION=$(curl -s https://api.github.com/repos/sigstore/cosign/releases/latest | jq -r .tag_name)
+        curl -Lo cosign https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/cosign-linux-amd64
+        chmod +x cosign
+        sudo mv cosign /usr/local/bin/
+
+    - name: Download provenance attestation
+      run: |
+        cosign download attestation docker.io/dcompanyestall/githubactions_cas3_1 > slsa-provenance.json
+
     - name: Upload provenance as artifact
       uses: actions/upload-artifact@v4
       with:
         name: provenance
-        path: ./slsa-provenance.json
+        path: slsa-provenance.json
 
-    # Print provenance in logs for debugging
-    - name: Print provenance
-      run: cat ./slsa-provenance.json
-
- 
+    - name: Print provenance for debugging
+      run: cat slsa-provenance.json
