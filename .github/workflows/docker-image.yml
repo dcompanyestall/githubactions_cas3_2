@@ -100,7 +100,7 @@ jobs:
   #Intento fer que això funcioni
   upload-provenance:
     runs-on: ubuntu-latest
-    needs: [provenance]
+    needs: [build-and-push,provenance]
     steps:
     - name: Install Cosign
       run: |
@@ -108,6 +108,12 @@ jobs:
         curl -Lo cosign https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/cosign-linux-amd64
         chmod +x cosign
         sudo mv cosign /usr/local/bin/
+    
+    - name: Retrieve digest from build-and-push
+      run: echo "IMAGE_DIGEST=${{ needs.build-and-push.outputs.digest }}" >> $GITHUB_ENV
+
+    - name: Verify the digest value
+      run: echo "Using Digest:$IMAGE_DIGEST"
 
     - name: Download provenance attestation
       run: |
