@@ -111,6 +111,8 @@ jobs:
 
     - name: Download provenance attestation
       run: |
+        IMAGE_NAME=docker.io/dcompanyestall/githubactions_cas3_1
+        IMAGE_DIGEST=${{ needs.build-and-push.outputs.digest }}
         cosign download attestation docker.io/dcompanyestall/githubactions_cas3_1 > slsa-provenance.json
 
     - name: Upload provenance as artifact
