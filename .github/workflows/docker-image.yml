@@ -50,7 +50,7 @@ jobs:
       id: meta
       uses: docker/metadata-action@v5
       with:
-        #images: ${{ secrets.DOCKERHUB_USERNAME }}/githubactions_cas3_1
+        #images: ${{ secrets.DOCKERHUB_USERNAME }}/githubactions_cas3_2
         images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
         tags: |
           type=semver,pattern={{version}}
@@ -70,12 +70,12 @@ jobs:
         context: .
         #push: ${{ github.event_name != 'pull_request' }}
         push: true
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/githubactions_cas3_1:main
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/githubactions_cas3_2:main
         labels: ${{ steps.meta.outputs.labels }}
         #provenance: true
         #builder: ${{ steps.buildx.outputs.name }}  # Use the Buildx builder 
         provenance: true
-        outputs: type=image,name=${{ secrets.DOCKERHUB_USERNAME }}/githubactions_cas3_1,push=true
+        outputs: type=image,name=${{ secrets.DOCKERHUB_USERNAME }}/githubactions_cas3_2,push=true
 
     - name: Capture image digest
       run: echo "IMAGE_DIGEST=${{ steps.build-push.outputs.digest }}" >> $GITHUB_ENV
@@ -105,7 +105,7 @@ jobs:
       run: |
         IMAGE_NAME=docker.io/dcompanyestall/githubactions_cas3_2
         IMAGE_DIGEST=${{ needs.build-and-push.outputs.digest }}
-        #cosign download attestation docker.io/dcompanyestall/githubactions_cas3_1@${IMAGE_DIGEST} > slsa-provenance.json
+        #cosign download attestation docker.io/dcompanyestall/githubactions_cas3_2@${IMAGE_DIGEST} > slsa-provenance.json
         cosign download attestation ${IMAGE_NAME}@${IMAGE_DIGEST} > slsa-provenance.json
 
     - name: Sign provenance attestation
@@ -120,7 +120,7 @@ jobs:
         IMAGE_DIGEST=${{ needs.build-and-push.outputs.digest }}
         cosign verify-attestation --type slsaprovenance \
           --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-          --certificate-identity "https://github.com/dcompanyestall/githubactions_cas3_1/.github/workflows/Docker%20Image%20CI.yml@refs/heads/main" \
+          --certificate-identity "https://github.com/dcompanyestall/githubactions_cas3_2/.github/workflows/Docker%20Image%20CI.yml@refs/heads/main" \
           ${IMAGE_NAME}@${IMAGE_DIGEST} | jq -r '.[0].payload' | base64 -d | jq .
   
     - name: Upload provenance as artifact
