@@ -119,7 +119,7 @@ jobs:
         # Move provenance to expected file
         mv ./provenance/index.json slsa-provenance.json
 
-     - name: Sign provenance attestation
+    - name: Sign provenance attestation
       run: |
         IMAGE_NAME=ghcr.io/${{ github.repository }}
         IMAGE_DIGEST=${{ needs.build-and-push.outputs.digest }}
