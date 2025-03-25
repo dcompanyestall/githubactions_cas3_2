@@ -80,7 +80,7 @@ jobs:
     - name: Capture image digest
       run: echo "IMAGE_DIGEST=${{ steps.build-push.outputs.digest }}" >> $GITHUB_ENV
         
-  sign-provenance:
+  sign-and-upload-provenance:
     runs-on: ubuntu-latest
     needs: [build-and-push]
     permissions:
@@ -101,7 +101,20 @@ jobs:
     - name: Verify the digest value
       run: echo "Using Digest:$IMAGE_DIGEST"
 
-    - name: Generate and sign provenance attestation
+    - name: Generate SLSA Provenance
+      run: |
+        IMAGE_NAME=ghcr.io/${{ github.repository }}
+        IMAGE_DIGEST=${{ needs.build-and-push.outputs.digest }}
+
+        docker buildx create --use
+        docker buildx bake --set "*.provenance=mode=max" -f docker-bake.hcl
+        docker buildx inspect --bootstrap
+
+        # Extract provenance from buildx
+        docker buildx imagetools inspect ${IMAGE_NAME}@${IMAGE_DIGEST} --format '{{ json . }}' > slsa-provenance.json
+        cat slsa-provenance.json  # Debugging: Print file
+
+    - name: sign provenance attestation
       run: |
         IMAGE_NAME=docker.io/${{ secrets.DOCKERHUB_USERNAME }}/githubactions_cas3_2
         cosign attest --predicate slsa-provenance.json --type slsaprovenance ${IMAGE_NAME}@${IMAGE_DIGEST}
@@ -114,7 +127,7 @@ jobs:
           --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/Docker%20Image%20CI.yml@refs/heads/main" \
           ${IMAGE_NAME}@${IMAGE_DIGEST} | jq -r '.[0].payload' | base64 -d | jq .
 
-    - name: Upload provenance as artifact
+    - name: Upload provenance to GitHun artifacts
       uses: actions/upload-artifact@v4
       with:
         name: provenance
