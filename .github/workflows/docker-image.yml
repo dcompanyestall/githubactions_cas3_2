@@ -101,28 +101,19 @@ jobs:
     - name: Verify the digest value
       run: echo "Using Digest:$IMAGE_DIGEST"
 
-    - name: Download provenance attestation
+    - name: Generate and sign provenance attestation
       run: |
-        IMAGE_NAME=docker.io/dcompanyestall/githubactions_cas3_2
-        IMAGE_DIGEST=${{ needs.build-and-push.outputs.digest }}
-        #cosign download attestation docker.io/dcompanyestall/githubactions_cas3_2@${IMAGE_DIGEST} > slsa-provenance.json
-        cosign download attestation ${IMAGE_NAME}@${IMAGE_DIGEST} > slsa-provenance.json
-
-    - name: Sign provenance attestation
-      run: |
-        IMAGE_NAME=docker.io/dcompanyestall/githubactions_cas3_2
-        IMAGE_DIGEST=${{ needs.build-and-push.outputs.digest }}
-        cosign sign-attestation --yes ${IMAGE_NAME}@${IMAGE_DIGEST}
+        IMAGE_NAME=docker.io/${{ secrets.DOCKERHUB_USERNAME }}/githubactions_cas3_2
+        cosign attest --predicate slsa-provenance.json --type slsaprovenance ${IMAGE_NAME}@${IMAGE_DIGEST}
 
     - name: Verify signed provenance attestation
       run: |
-        IMAGE_NAME=docker.io/dcompanyestall/githubactions_cas3_2
-        IMAGE_DIGEST=${{ needs.build-and-push.outputs.digest }}
+        IMAGE_NAME=docker.io/${{ secrets.DOCKERHUB_USERNAME }}/githubactions_cas3_2
         cosign verify-attestation --type slsaprovenance \
           --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-          --certificate-identity "https://github.com/dcompanyestall/githubactions_cas3_2/.github/workflows/Docker%20Image%20CI.yml@refs/heads/main" \
+          --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/Docker%20Image%20CI.yml@refs/heads/main" \
           ${IMAGE_NAME}@${IMAGE_DIGEST} | jq -r '.[0].payload' | base64 -d | jq .
-  
+
     - name: Upload provenance as artifact
       uses: actions/upload-artifact@v4
       with:
