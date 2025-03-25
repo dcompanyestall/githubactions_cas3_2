@@ -109,15 +109,12 @@ jobs:
         IMAGE_NAME=ghcr.io/${{ github.repository }}
         IMAGE_DIGEST=${{ needs.build-and-push.outputs.digest }}
 
-        docker buildx create --use
-        docker buildx inspect --bootstrap
-        docker buildx build --provenance=mode=max --output=type=local,dest=./provenance .
+        # Extract provenance from image metadata
+        docker buildx imagetools inspect ${IMAGE_NAME}@${IMAGE_DIGEST} --format '{{ json . }}' > slsa-provenance.json
 
-        ls -la ./provenance  # Debug: Check provenance exists
-        cat ./provenance/index.json | jq .  # Debug: Print provenance metadata
-
-        # Move provenance to expected file
-        mv ./provenance/index.json slsa-provenance.json
+        # Debugging: Ensure provenance file exists
+        ls -la slsa-provenance.json
+        cat slsa-provenance.json | jq .  # Pretty-print provenance metadata
 
     - name: Sign provenance attestation
       run: |
