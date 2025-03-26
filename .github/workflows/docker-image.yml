@@ -1,13 +1,11 @@
 name: Docker Image CI
-# Installs cosign
 # Set up BuildKit Docker container to build multi-platform images
 # Logs in github container registry
 # Extracts metadata for better tagging.
 # Builds and pushes the image to ghcr.io.
-# Uses anchore/sbom-action to generate an SBOM in SPDX format.
-# Upload SBOM to GitHub Release
-# Uploads the SBOM as an artifact to GitHub.
-# Signs the resulting container image digest and the SBOM with cosing ephemeral key 
+# Calls provenance to generate SLSA provenance - inputs are image and digests
+# Provenance is signed and uploaded
+ 
 
 on:
   push:
