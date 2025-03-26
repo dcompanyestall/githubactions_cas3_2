@@ -3,7 +3,8 @@ name: Docker Image CI
 # Logs in github container registry
 # Extracts metadata for better tagging.
 # Builds and pushes the image to ghcr.io.
-# Calls provenance to generate SLSA provenance - inputs are image and digests
+# Calls provenance to generate SLSA provenance
+# Inputs are OCI image name, OCI image digest and container registry username.
 # Provenance is signed and uploaded
  
 
