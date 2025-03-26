@@ -93,3 +93,34 @@ jobs:
       registry-username: ${{ github.actor }}
     secrets:
       registry-password: ${{ secrets.GITHUB_TOKEN }}
+
+  #Afegit - fer funciona
+  fetch-provenance:
+    needs: [provenance]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read  # Necesario para leer desde GHCR
+    steps:
+      - name: Instalar ORAS CLI
+        run: |
+          curl -LO https://github.com/oras-project/oras/releases/latest/download/oras-linux-amd64
+          chmod +x oras-linux-amd64
+          sudo mv oras-linux-amd64 /usr/local/bin/oras
+
+      - name: Obtener archivo de provenance
+        run: |
+          IMAGE="ghcr.io/${{ github.repository }}"
+          DIGEST="${{ needs.build.outputs.digest }}"
+          
+          echo "Descubriendo provenance..."
+          oras discover "$IMAGE@$DIGEST" -o json | tee attestations.json
+          
+          echo "Descargando provenance..."
+          oras pull "$IMAGE:sha256-${DIGEST}.att"
+
+      - name: Guardar provenance como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: slsa-provenance
+          path: "sha256-${{ needs.build.outputs.digest }}.att"
