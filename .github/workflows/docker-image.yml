@@ -80,17 +80,28 @@ jobs:
     - name: Capture image digest
       run: echo "IMAGE_DIGEST=${{ steps.build-push.outputs.digest }}" >> $GITHUB_ENV
         
-  sign-and-upload-provenance:
-    runs-on: ubuntu-latest
+  provenance:
+    name: Generate SLSA Provenance
     needs: [build-and-push]
     permissions:
-        id-token: write  # Needed for Cosign keyless signing
+        actions: read # for detecting the Github Actions environment.
+        id-token: write # for creating OIDC tokens for signing.
         packages: write
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.0.0
+    with:
+      #image: ${{ needs.build-and-push.outputs.image }}
+      image: dcompanyestall/githubactions_cas3_2
+      #image: dcompanyestall/${{ needs.build-and-push.outputs.image }}
+      digest: ${{ needs.build-and-push.outputs.digest }}
+    secrets:
+      registry-username: ${{ secrets.DOCKERHUB_USERNAME }}
+      registry-password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+  #Intento fer que això funcioni
+  upload-provenance:
+    runs-on: ubuntu-latest
+    needs: [build-and-push,provenance]
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-    
     - name: Install Cosign
       run: |
         COSIGN_VERSION=$(curl -s https://api.github.com/repos/sigstore/cosign/releases/latest | jq -r .tag_name)
@@ -104,37 +115,17 @@ jobs:
     - name: Verify the digest value
       run: echo "Using Digest:$IMAGE_DIGEST"
 
-    - name: Generate SLSA Provenance
+    - name: Download provenance attestation
       run: |
-        IMAGE_NAME=ghcr.io/${{ github.repository }}
+        IMAGE_NAME=docker.io/dcompanyestall/githubactions_cas3_2
         IMAGE_DIGEST=${{ needs.build-and-push.outputs.digest }}
+        cosign download attestation docker.io/dcompanyestall/githubactions_cas3_2@${IMAGE_DIGEST} > slsa-provenance.json
 
-        # Extract provenance from image metadata
-        docker buildx imagetools inspect ${IMAGE_NAME}@${IMAGE_DIGEST} --format '{{ json . }}' > slsa-provenance.json
-
-        # Debugging: Ensure provenance file exists
-        ls -la slsa-provenance.json
-        cat slsa-provenance.json | jq .  # Pretty-print provenance metadata
-
-    - name: Sign provenance attestation
-      run: |
-        IMAGE_NAME=ghcr.io/${{ github.repository }}
-        IMAGE_DIGEST=${{ needs.build-and-push.outputs.digest }}
-
-        cosign attest --predicate slsa-provenance.json --yes ${IMAGE_NAME}@${IMAGE_DIGEST}
-
-    - name: Verify signed provenance attestation
-      run: |
-        IMAGE_NAME=ghcr.io/${{ github.repository }}
-        IMAGE_DIGEST=${{ needs.build-and-push.outputs.digest }}
-
-        cosign verify-attestation --type slsaprovenance \
-          --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-          --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/Docker%20Image%20CI.yml@refs/heads/main" \
-          ${IMAGE_NAME}@${IMAGE_DIGEST} | jq -r '.[0].payload' | base64 -d | jq .
-
-    - name: Upload provenance to GitHub Artifacts
+    - name: Upload provenance as artifact
       uses: actions/upload-artifact@v4
       with:
         name: provenance
         path: slsa-provenance.json
+
+    - name: Print provenance for debugging
+      run: cat slsa-provenance.json
