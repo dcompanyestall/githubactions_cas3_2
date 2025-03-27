@@ -125,10 +125,10 @@ jobs:
           DIGEST="${{ needs.build.outputs.digest }}"
           
           echo "Descubriendo provenance..."
-          oras discover "$IMAGE@$DIGEST" -o json | tee attestations.json
+          oras discover "$IMAGE@$DIGEST" --format json | tee attestations.json
           
           echo "Descargando provenance..."
-          oras pull "$IMAGE:${DIGEST}.att"
+          oras pull "$IMAGE${DIGEST}.att"
 
       - name: Save provenance as artifact
         uses: actions/upload-artifact@v4
