@@ -5,7 +5,7 @@ name: Docker Image CI
 # Builds and pushes the image to ghcr.io.
 # Calls provenance to generate SLSA provenance
 # Inputs are OCI image name, OCI image digest and container registry username.
-# Provenance is signed and uploaded
+# Provenance is signed and uploaded in GHCR
  
 
 on:
@@ -95,48 +95,4 @@ jobs:
     secrets:
       registry-password: ${{ secrets.GITHUB_TOKEN }}
 
-  #Afegit - fer funciona
-  #fetch-provenance:
-  #  needs: [provenance, build]
-  #  runs-on: ubuntu-latest
-  #  permissions:
-  #    contents: read
-  #    packages: read  # Necessary to read from GHCR
-  #  steps:
-  #    - name: Install ORAS for OCI Artifact Support
-  #      run: |
-  #        ORAS_VERSION=$(curl -s https://api.github.com/repos/oras-project/oras/releases/latest | jq -r '.tag_name' | sed 's/v//')
-  #        curl -LO https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz
-  #        tar -xvzf oras_${ORAS_VERSION}_linux_amd64.tar.gz
-  #        chmod +x oras
-  #        sudo mv oras /usr/local/bin/oras
-  #        oras version
-      
-  #    - name: Verificar que `digest` no está vacío
-  #      run: |
-  #        echo "Digest recibido: ${{ needs.build.outputs.digest }}"
-  #        if [[ -z "${{ needs.build.outputs.digest }}" ]]; then
-  #          echo "ERROR: El digest está vacío."
-  #          exit 1
-  #        fi 
-      
-  #   - name: Obtain provenance archive
-  #      run: |
-  #        IMAGE="ghcr.io/${{ github.repository }}"
-  #        DIGEST="${{ needs.build.outputs.digest }}"
-          
-  #        echo "Descubriendo provenance..."
-          #oras discover "$IMAGE@$DIGEST" --format json | tee attestations.json
-  #        oras discover "ghcr.io/${{ github.repository }}@${{ needs.build.outputs.digest }}" --format json
-
-          
-   #       echo "Descargando provenance..."
-          #oras pull "$IMAGE${DIGEST}.att"
-   #       oras pull "ghcr.io/${{ github.repository }}@${{ needs.build.outputs.digest }}.att"
-
-
-    #  - name: Save provenance as artifact
-    #    uses: actions/upload-artifact@v4
-    #    with:
-    #      name: slsa-provenance
-    #      path: "sha256-${{ needs.build.outputs.digest }}.att"
+  
