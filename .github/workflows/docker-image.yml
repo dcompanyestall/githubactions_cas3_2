@@ -102,9 +102,11 @@ jobs:
       contents: read
       packages: read  # Necessary to read from GHCR
     steps:
-      - name: Install ORAS CLI
+      - name: Install ORAS for OCI Artifact Support
         run: |
-          curl -fsSL https://github.com/oras-project/oras/releases/latest/download/oras-linux-amd64 -o oras
+          ORAS_VERSION=$(curl -s https://api.github.com/repos/oras-project/oras/releases/latest | jq -r '.tag_name' | sed 's/v//')
+          curl -LO https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz
+          tar -xvzf oras_${ORAS_VERSION}_linux_amd64.tar.gz
           chmod +x oras
           sudo mv oras /usr/local/bin/oras
           oras version
