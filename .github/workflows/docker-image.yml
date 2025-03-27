@@ -96,19 +96,28 @@ jobs:
 
   #Afegit - fer funciona
   fetch-provenance:
-    needs: [provenance]
+    needs: [provenance, build]
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: read  # Necesario para leer desde GHCR
+      packages: read  # Necessary to read from GHCR
     steps:
-      - name: Instalar ORAS CLI
+      - name: Install ORAS CLI
         run: |
-          curl -LO https://github.com/oras-project/oras/releases/latest/download/oras-linux-amd64
-          chmod +x oras-linux-amd64
-          sudo mv oras-linux-amd64 /usr/local/bin/oras
-
-      - name: Obtener archivo de provenance
+          curl -fsSL https://github.com/oras-project/oras/releases/latest/download/oras-linux-amd64 -o oras
+          chmod +x oras
+          sudo mv oras /usr/local/bin/oras
+          oras version
+      
+      - name: Verificar que `digest` no está vacío
+        run: |
+          echo "Digest recibido: ${{ needs.build.outputs.digest }}"
+          if [[ -z "${{ needs.build.outputs.digest }}" ]]; then
+            echo "ERROR: El digest está vacío."
+            exit 1
+          fi 
+      
+      - name: Obtain provenance archive
         run: |
           IMAGE="ghcr.io/${{ github.repository }}"
           DIGEST="${{ needs.build.outputs.digest }}"
@@ -119,7 +128,7 @@ jobs:
           echo "Descargando provenance..."
           oras pull "$IMAGE:sha256-${DIGEST}.att"
 
-      - name: Guardar provenance como artifact
+      - name: Save provenance as artifact
         uses: actions/upload-artifact@v4
         with:
           name: slsa-provenance
