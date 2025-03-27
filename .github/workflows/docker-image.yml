@@ -92,7 +92,6 @@ jobs:
       image: ${{ needs.build.outputs.image }}
       digest: ${{ needs.build.outputs.digest }}
       registry-username: ${{ github.actor }}
-      artifact-path: ./output
     secrets:
       registry-password: ${{ secrets.GITHUB_TOKEN }}
 
